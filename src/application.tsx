@@ -12,8 +12,38 @@ import { Circle, Fill, Stroke, Style, Text } from "ol/style.js";
 useGeographic();
 
 const map = new Map({
-  view: new View({ center: [10.8, 59.9], zoom: 13 }),
-  layers: [new TileLayer({ source: new OSM() })],
+  layers: [
+    new TileLayer({ source: new OSM() }),
+    new VectorLayer({
+      source: new VectorSource({
+        url: "/KWS2100-ex-01/geojson/fylker.geojson",
+        format: new GeoJSON(),
+      }),
+      style: new Style({
+        stroke: new Stroke({
+          color: "black",
+          width: 1,
+        }),
+      }),
+    }),
+    new VectorLayer({
+      source: new VectorSource({
+        url: "/KWS2100-ex-01/geojson/vgs.geojson",
+        format: new GeoJSON(),
+      }),
+      style: new Style({
+        image: new Circle({
+          radius: 5,
+          fill: new Fill({ color: "red" }),
+          stroke: new Stroke({ color: "black", width: 2 }),
+        }),
+      }),
+    }),
+  ],
+  view: new View({
+    center: [11, 60],
+    zoom: 8,
+  }),
 });
 
 export function Application() {
