@@ -9,9 +9,11 @@
   "scripts": {
     "dev": "vite",
     "test": "tsc --noEmit && prettier --check .",
+    "build": "vite build",
     "prepare": "husky"
   },
   "dependencies": {
+    "ol": "^10.7.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },
