@@ -8,6 +8,7 @@ import { GeoJSON } from "ol/format.js";
 import { useGeographic } from "ol/proj.js";
 import "ol/ol.css";
 import { Circle, Fill, Stroke, Style, Text } from "ol/style.js";
+import CircleGeom from "ol/geom/Circle.js";
 import "./application.css";
 import Geolocation from "ol/Geolocation.js";
 import { getCenter } from "ol/extent.js";
@@ -32,6 +33,15 @@ const vgsSource = new VectorSource({
 const view = new View({
   center: [11, 60],
   zoom: 8,
+});
+
+const userCenter = [12.4924, 41.8902];
+const userCircle = new Feature({
+  geometry: new CircleGeom(userCenter, 0.01),
+  style: new Style({
+    stroke: new Stroke({ width: 2 }),
+    fill: new Fill({ color: "red" }),
+  }),
 });
 
 const map = new Map({
@@ -59,6 +69,9 @@ const map = new Map({
     //     }),
     //   }),
     // }),
+    new VectorLayer({
+      source: new VectorSource({ features: [userCircle] }),
+    }),
   ],
   view: view,
 });
@@ -112,6 +125,10 @@ export function Application() {
     geolocation.setTracking(true);
     geolocation.on("change", function (evt: any) {
       setUserLocation(geolocation.getPosition());
+      (userCircle.getGeometry() as CircleGeom).setCenter(
+        geolocation.getPosition()!,
+      );
+      view.animate({ center: geolocation.getPosition() });
     });
   }, []);
 
