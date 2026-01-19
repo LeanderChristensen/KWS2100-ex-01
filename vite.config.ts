@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  base: "/KWS2100-ex-01",
+  base: "/KWS2100-ex",
 });

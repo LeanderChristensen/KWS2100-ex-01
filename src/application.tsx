@@ -9,12 +9,29 @@ import { useGeographic } from "ol/proj.js";
 import "ol/ol.css";
 import { Circle, Fill, Stroke, Style, Text } from "ol/style.js";
 import "./application.css";
+import Geolocation from "ol/Geolocation.js";
+import { getCenter } from "ol/extent.js";
 
 useGeographic();
 
 const fylkeSource = new VectorSource({
-  url: "/KWS2100-ex-01/geojson/fylker.geojson",
+  url: "/KWS2100-ex/geojson/fylker.geojson",
   format: new GeoJSON(),
+});
+
+const kommuneSource = new VectorSource({
+  url: "/KWS2100-ex/geojson/kommuner.geojson",
+  format: new GeoJSON(),
+});
+
+const vgsSource = new VectorSource({
+  url: "/KWS2100-ex/geojson/vgs.geojson",
+  format: new GeoJSON(),
+});
+
+const view = new View({
+  center: [11, 60],
+  zoom: 8,
 });
 
 const map = new Map({
@@ -23,65 +40,110 @@ const map = new Map({
     new VectorLayer({
       source: fylkeSource,
       style: new Style({
-        stroke: new Stroke({
-          color: "black",
-          width: 1,
+        stroke: new Stroke({ color: "blue", width: 2 }),
+        fill: new Fill({
+          color: "#ff000020",
         }),
       }),
     }),
     new VectorLayer({
-      source: new VectorSource({
-        url: "/KWS2100-ex-01/geojson/vgs.geojson",
-        format: new GeoJSON(),
-      }),
-      style: new Style({
-        image: new Circle({
-          radius: 5,
-          fill: new Fill({ color: "red" }),
-          stroke: new Stroke({ color: "black", width: 2 }),
-        }),
-      }),
+      source: kommuneSource,
     }),
+    // new VectorLayer({
+    //   source: vgsSource,
+    //   style: new Style({
+    //     image: new Circle({
+    //       radius: 5,
+    //       fill: new Fill({ color: "red" }),
+    //       stroke: new Stroke({ color: "black", width: 2 }),
+    //     }),
+    //   }),
+    // }),
   ],
-  view: new View({
-    center: [11, 60],
-    zoom: 8,
-  }),
+  view: view,
 });
 
 export function Application() {
   const mapRef = useRef<HTMLDivElement | null>(null);
 
-  const [activeFeature, setActiveFeature] = useState<Feature>();
+  const geolocation = new Geolocation({
+    projection: view.getProjection(),
+  });
+
+  const [activeFylke, setActiveFylke] = useState<Feature>();
+  const [alleKommuner, setAlleKommuner] = useState<Feature[]>([]);
+  const [selectedKommune, setSelectedKommune] = useState<Feature>();
+  const [userLocation, setUserLocation] = useState<any>(
+    geolocation.getPosition(),
+  );
 
   function handlePointerMove(e: MapBrowserEvent) {
-    const features = fylkeSource.getFeaturesAtCoordinate(e.coordinate);
-    setActiveFeature(features.length > 0 ? features[0] : undefined);
+    const fylke = fylkeSource.getFeaturesAtCoordinate(e.coordinate);
+    setActiveFylke(fylke.length > 0 ? fylke[0] : undefined);
+  }
+
+  function handleMapClick(e: MapBrowserEvent) {
+    const clickedKommune = kommuneSource.getFeaturesAtCoordinate(e.coordinate);
+    setSelectedKommune(
+      clickedKommune.length > 0 ? clickedKommune[0] : undefined,
+    );
   }
 
   useEffect(() => {
-    activeFeature?.setStyle(
-      (f) =>
+    activeFylke?.setStyle(
+      (fylke) =>
         new Style({
-          stroke: new Stroke({
-            color: "black",
-            width: 3,
-          }),
+          stroke: new Stroke({ color: "blue", width: 4 }),
           text: new Text({
-            text: f.getProperties()["fylkesnavn"],
-            font: "24px serif",
-            fill: new Fill({ color: "green" }),
-            stroke: new Stroke({ color: "white", width: 2 }),
+            text: fylke.getProperties()["fylkesnavn"],
           }),
         }),
     );
-    return () => activeFeature?.setStyle(undefined);
-  }, [activeFeature]);
+    return () => activeFylke?.setStyle(undefined);
+  }, [activeFylke]);
 
   useEffect(() => {
     map.setTarget(mapRef.current!);
     map.on("pointermove", handlePointerMove);
+    map.on("click", handleMapClick);
+    kommuneSource.on("change", () =>
+      setAlleKommuner(kommuneSource.getFeatures()),
+    );
+    geolocation.setTracking(true);
+    geolocation.on("change", function (evt: any) {
+      setUserLocation(geolocation.getPosition());
+    });
   }, []);
 
-  return <div ref={mapRef}></div>;
+  function handleClick(kommuneProperties: Record<string, any>) {
+    view.animate({ center: getCenter(kommuneProperties.geometry.getExtent()) });
+  }
+
+  return (
+    <>
+      <h1>
+        {selectedKommune
+          ? selectedKommune.getProperties()["kommunenavn"] + " "
+          : "Kart over administrative områder i Norge "}
+      </h1>
+      <main>
+        <div ref={mapRef}></div>
+        <aside>
+          <h2>Alle kommuner</h2>
+          <ul>
+            {alleKommuner
+              .map((f) => f.getProperties())
+              .sort((a, b) => a["kommunenavn"].localeCompare(b["kommunenavn"]))
+              .map((k) => (
+                <li>
+                  <a href={"#"} onClick={(e) => handleClick(k)}>
+                    {k["kommunenavn"]}
+                  </a>
+                </li>
+              ))}
+          </ul>
+        </aside>
+      </main>
+    </>
+  );
 }
