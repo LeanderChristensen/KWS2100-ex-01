@@ -31,17 +31,18 @@ const vgsSource = new VectorSource({
 });
 
 const view = new View({
-  center: [11, 60],
-  zoom: 8,
+  projection: "EPSG:4326",
+  center: [10.75, 59.92],
+  zoom: 11,
 });
 
 const userCenter = [12.4924, 41.8902];
 const userCircle = new Feature({
   geometry: new CircleGeom(userCenter, 0.01),
-  style: new Style({
-    stroke: new Stroke({ width: 2 }),
-    fill: new Fill({ color: "red" }),
-  }),
+  // style: new Style({
+  //   stroke: new Stroke({ width: 2 }),
+  //   fill: new Fill({ color: "red" }),
+  // }),
 });
 
 const map = new Map({
@@ -86,9 +87,10 @@ export function Application() {
   const [activeFylke, setActiveFylke] = useState<Feature>();
   const [alleKommuner, setAlleKommuner] = useState<Feature[]>([]);
   const [selectedKommune, setSelectedKommune] = useState<Feature>();
-  const [userLocation, setUserLocation] = useState<any>(
-    geolocation.getPosition(),
-  );
+  // const [userLocation, setUserLocation] = useState<any>(
+  //   geolocation.getPosition(),
+  // );
+  const [locationEnabled, setlocationEnabled] = useState<Boolean>(false);
 
   function handlePointerMove(e: MapBrowserEvent) {
     const fylke = fylkeSource.getFeaturesAtCoordinate(e.coordinate);
@@ -124,7 +126,7 @@ export function Application() {
     );
     geolocation.setTracking(true);
     geolocation.on("change", function (evt: any) {
-      setUserLocation(geolocation.getPosition());
+      // setUserLocation(geolocation.getPosition());
       (userCircle.getGeometry() as CircleGeom).setCenter(
         geolocation.getPosition()!,
       );
